@@ -124,16 +124,16 @@ def encapsulate(frames, cameras):
 
 def convert_raw_to_numpy(dataset_info, raw_data, path, jpeg=False):
     feature_map = {
-        'frames': tf.FixedLenFeature(
+        'frames': tf.io.FixedLenFeature(
             shape=dataset_info.sequence_size, dtype=tf.string),
-        'cameras': tf.FixedLenFeature(
+        'cameras': tf.io.FixedLenFeature(
             shape=[dataset_info.sequence_size * 5],
             dtype=tf.float32)
     }
-    example = tf.parse_single_example(raw_data, feature_map)
+    example = tf.io.parse_single_example(raw_data, feature_map)
     frames = preprocess_frames(dataset_info, example, jpeg)
     cameras = preprocess_cameras(dataset_info, example, jpeg)
-    with tf.train.SingularMonitoredSession() as sess:
+    with tf.Session() as sess:
         frames = sess.run(frames)
         cameras = sess.run(cameras)
     scene = encapsulate(frames, cameras)
@@ -165,13 +165,16 @@ if __name__ == '__main__':
     DATASET = args.dataset
     dataset_info = _DATASETS[DATASET]
 
-    torch_dataset_path = f'{DATASET}-torch'
-    torch_dataset_path_train = f'{torch_dataset_path}/train'
-    torch_dataset_path_test = f'{torch_dataset_path}/test'
+    torch_dataset_path = os.path.join(args.data_dir, f'{DATASET}-torch')
+    torch_dataset_path_train = os.path.join(args.data_dir, f'{torch_dataset_path}/train')
+    torch_dataset_path_test = os.path.join(args.data_dir, f'{torch_dataset_path}/test')
 
-    os.mkdir(torch_dataset_path)
-    os.mkdir(torch_dataset_path_train)
-    os.mkdir(torch_dataset_path_test)
+    if not os.path.exists(torch_dataset_path):
+        os.mkdir(torch_dataset_path)
+    if not os.path.exists(torch_dataset_path_train):
+        os.mkdir(torch_dataset_path_train)
+    if not os.path.exists(torch_dataset_path_test):
+        os.mkdir(torch_dataset_path_test)
 
     ## train
     file_names = _get_dataset_files(dataset_info, 'train', args.data_dir)
